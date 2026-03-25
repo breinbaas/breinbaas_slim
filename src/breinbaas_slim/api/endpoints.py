@@ -1,6 +1,6 @@
 import os
 import tempfile
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
 
 from ..objects.cpt import Cpt
@@ -11,12 +11,15 @@ from ..constants import (
     DEFAULT_CPT_INTERPRETATION_MIN_LAYERHEIGHT,
     DEFAULT_CPT_INTERPRETATION_PEAT_FRICTION_RATIO,
 )
+from .security import get_current_client
 
 router = APIRouter()
 
 
 @router.post("/cpt/from_xml", response_model=Cpt)
-async def cpt_from_xml(file: UploadFile = File(...)):
+async def cpt_from_xml(
+    file: UploadFile = File(...), client_name: str = Depends(get_current_client)
+):
     """Parse a CPT from an XML file"""
     if not file.filename.endswith(".xml"):
         raise HTTPException(status_code=400, detail="File must be an XML")
@@ -37,7 +40,7 @@ async def cpt_from_xml(file: UploadFile = File(...)):
 
 
 @router.get("/cpt/from_bro_id/{bro_id}", response_model=Cpt)
-async def cpt_from_bro_id(bro_id: str):
+async def cpt_from_bro_id(bro_id: str, client_name: str = Depends(get_current_client)):
     """Parse a CPT from a BRO ID"""
     try:
         return Cpt.from_bro_id(bro_id)
@@ -46,7 +49,9 @@ async def cpt_from_bro_id(bro_id: str):
 
 
 @router.post("/borehole/from_xml", response_model=Borehole)
-async def borehole_from_xml(file: UploadFile = File(...)):
+async def borehole_from_xml(
+    file: UploadFile = File(...), client_name: str = Depends(get_current_client)
+):
     """Parse a Borehole from an XML file"""
     if not file.filename.endswith(".xml"):
         raise HTTPException(status_code=400, detail="File must be an XML")
@@ -67,7 +72,7 @@ async def borehole_from_xml(file: UploadFile = File(...)):
 
 
 @router.get("/borehole/from_bro_id/{bro_id}", response_model=Borehole)
-async def borehole_from_bro_id(bro_id: str):
+async def borehole_from_bro_id(bro_id: str, client_name: str = Depends(get_current_client)):
     """Parse a Borehole from a BRO ID"""
     try:
         return Borehole.from_bro_id(bro_id)
@@ -83,7 +88,9 @@ class CptInterpretationRequest(BaseModel):
 
 
 @router.post("/cpt_interpretor/to_soil_profile", response_model=SoilProfile)
-async def interpret_cpt(request: CptInterpretationRequest):
+async def interpret_cpt(
+    request: CptInterpretationRequest, client_name: str = Depends(get_current_client)
+):
     """Interpret a CPT to a Soil Profile"""
     try:
         interpretor = CptInterpretor(request.cpt)

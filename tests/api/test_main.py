@@ -15,13 +15,17 @@ class TestAPI:
             response = client.post(
                 "/api/cpt/from_xml",
                 files={"file": ("CPT000000074504.xml", f, "text/xml")},
+                headers={"X-API-Key": "key_frontend_987654321"},
             )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "CPT000000074504"
 
     def test_cpt_from_bro_id(self):
-        response = client.get("/api/cpt/from_bro_id/CPT000000074504")
+        response = client.get(
+            "/api/cpt/from_bro_id/CPT000000074504",
+            headers={"X-API-Key": "key_frontend_987654321"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "CPT000000074504"
@@ -31,13 +35,17 @@ class TestAPI:
             response = client.post(
                 "/api/borehole/from_xml",
                 files={"file": ("BHR000000354228.xml", f, "text/xml")},
+                headers={"X-API-Key": "key_frontend_987654321"}
             )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "BHR000000354228"
 
     def test_borehole_from_bro_id(self):
-        response = client.get("/api/borehole/from_bro_id/BHR000000354228")
+        response = client.get(
+            "/api/borehole/from_bro_id/BHR000000354228",
+            headers={"X-API-Key": "key_frontend_987654321"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "BHR000000354228"
@@ -53,6 +61,7 @@ class TestAPI:
                 "minimum_layerheight": 0.1,
                 "peat_friction_ratio": 6.0,
             },
+            headers={"X-API-Key": "key_frontend_987654321"}
         )
         assert response.status_code == 200
         data = response.json()
