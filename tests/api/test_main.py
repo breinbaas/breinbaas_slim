@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from fastapi.responses import JSONResponse
 
 from breinbaas_slim.api.main import app
 from breinbaas_slim.objects.cpt import Cpt
@@ -9,6 +10,21 @@ client = TestClient(app)
 
 
 class TestAPI:
+
+    def test_cpt_metadata_by_polyline(self):
+        response = client.post(
+            "/api/bro/cpt_metadata/by_polyline",
+            json={
+                "points": [
+                    (118471, 469367),
+                    (118800, 469281),
+                ],
+                "offset": 10,
+            },
+            headers={"X-API-Key": "key_frontend_987654321"},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["cpt_characteristics"]) > 0
 
     def test_cpt_from_xml(self):
         with open("tests/testdata/cpts/CPT000000074504.xml", "rb") as f:
@@ -24,7 +40,7 @@ class TestAPI:
     def test_cpt_from_bro_id(self):
         response = client.get(
             "/api/cpt/from_bro_id/CPT000000074504",
-            headers={"X-API-Key": "key_frontend_987654321"}
+            headers={"X-API-Key": "key_frontend_987654321"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -35,7 +51,7 @@ class TestAPI:
             response = client.post(
                 "/api/borehole/from_xml",
                 files={"file": ("BHR000000354228.xml", f, "text/xml")},
-                headers={"X-API-Key": "key_frontend_987654321"}
+                headers={"X-API-Key": "key_frontend_987654321"},
             )
         assert response.status_code == 200
         data = response.json()
@@ -44,7 +60,7 @@ class TestAPI:
     def test_borehole_from_bro_id(self):
         response = client.get(
             "/api/borehole/from_bro_id/BHR000000354228",
-            headers={"X-API-Key": "key_frontend_987654321"}
+            headers={"X-API-Key": "key_frontend_987654321"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -61,7 +77,7 @@ class TestAPI:
                 "minimum_layerheight": 0.1,
                 "peat_friction_ratio": 6.0,
             },
-            headers={"X-API-Key": "key_frontend_987654321"}
+            headers={"X-API-Key": "key_frontend_987654321"},
         )
         assert response.status_code == 200
         data = response.json()

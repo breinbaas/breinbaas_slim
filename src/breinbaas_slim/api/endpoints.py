@@ -1,8 +1,10 @@
 import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from ..bro.bro import CPTCharacteristics, BROAPI
 from ..objects.cpt import Cpt
 from ..objects.borehole import Borehole
 from ..objects.soil_profile import SoilProfile
@@ -14,6 +16,57 @@ from ..constants import (
 from .security import get_current_client
 
 router = APIRouter()
+
+
+class BROCptByPolyLineRequest(BaseModel):
+    points: list[tuple[float, float]]
+    offset: float = 10
+
+
+class BROCptMetadataResponse(BaseModel):
+    bro_id: str
+    x: float
+    y: float
+    lat: float
+    lon: float
+
+    def to_dict(self):
+        return {
+            "bro_id": self.bro_id,
+            "x": self.x,
+            "y": self.y,
+            "lat": self.lat,
+            "lon": self.lon,
+        }
+
+
+@router.post("/bro/cpt_metadata/by_polyline")
+async def cpt_metadata_by_polyline(
+    request: BROCptByPolyLineRequest,
+    client_name: str = Depends(get_current_client),
+):
+    """Get CPTs by bounds"""
+    try:
+        bro_api = BROAPI()
+        cpt_characteristics = bro_api.get_cpt_metadata_by_polyline(
+            points=request.points, offset=request.offset
+        )
+
+        cpt_metadata_response = []
+        for cpt_characteristic in cpt_characteristics:
+            cpt_metadata_response.append(
+                BROCptMetadataResponse(
+                    bro_id=cpt_characteristic.bro_id,
+                    x=cpt_characteristic.delivered_location.x,
+                    y=cpt_characteristic.delivered_location.y,
+                    lat=cpt_characteristic.wgs84_coordinate.lat,
+                    lon=cpt_characteristic.wgs84_coordinate.lon,
+                ).to_dict()
+            )
+
+        return JSONResponse(content={"cpt_characteristics": cpt_metadata_response})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/cpt/from_xml", response_model=Cpt)
@@ -72,7 +125,9 @@ async def borehole_from_xml(
 
 
 @router.get("/borehole/from_bro_id/{bro_id}", response_model=Borehole)
-async def borehole_from_bro_id(bro_id: str, client_name: str = Depends(get_current_client)):
+async def borehole_from_bro_id(
+    bro_id: str, client_name: str = Depends(get_current_client)
+):
     """Parse a Borehole from a BRO ID"""
     try:
         return Borehole.from_bro_id(bro_id)
